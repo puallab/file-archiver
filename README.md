@@ -17,7 +17,7 @@ file-archiver/
 ├── build.gradle
 ├── docker-compose.yml     # PostgreSQL, MinIO
 ├── docs/
-└── src/main/java/com/filearchiver/server/
+└── src/main/java/com/filearchiver/
     ├── file/              # storage 읽기·쓰기, zip 생성·업로드
     ├── inspection/        # 검사 파일 등록
     ├── packing/           # 포장·출하·제품 (shipment·packaging·product)

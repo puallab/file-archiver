@@ -40,7 +40,8 @@ file-agent가 스토리지에 파일을 올린 뒤 메타데이터를 등록한�
 | 상황 | 코드 | 본문 |
 |---|---|---|
 | 등록됨 | 201 | `{"fileId": 123}` |
-| 같은 (product_id, inspected_at)이 이미 있음 (재시도) | 201 | 기존 `fileId`. 실패로 보지 않는다 |
+| 같은 (product_id, inspected_at)이 이미 있고 제품이 포장 전 | 201 | 기존 `fileId`. sensorId·uploaderEquipment·filePath를 요청 값으로 바꾼다 |
+| 같은 (product_id, inspected_at)이 이미 있고 제품이 포장됨 | 201 | 기존 `fileId`. 요청을 반영하지 않는다 |
 | 필수 필드 누락·형식 오류 | 400 | 오류 본문 |
 
 처음 들어온 시리얼이면 같은 트랜잭션 안에서 product 행도 만든다.
