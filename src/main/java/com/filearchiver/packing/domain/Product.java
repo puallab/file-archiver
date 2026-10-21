@@ -41,4 +41,8 @@ public class Product {
         return Product.builder().serial(serial).build();
     }
 
+    public boolean isPacked() {
+        return this.packaging != null;
+    }
+
 }

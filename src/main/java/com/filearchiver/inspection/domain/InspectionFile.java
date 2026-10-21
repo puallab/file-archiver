@@ -7,10 +7,10 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -22,8 +22,8 @@ import java.time.LocalDateTime;
 @Getter
 @Entity
 @Table(name = "inspection_file",
-    indexes = @Index(name = "idx_inspection_file_product_id_inspected_at",
-        columnList = "product_id, inspected_at"))
+    uniqueConstraints = @UniqueConstraint(name = "uk_inspection_file_product_id_inspected_at",
+        columnNames = {"product_id", "inspected_at"}))
 public class InspectionFile {
 
     @Id
@@ -82,5 +82,11 @@ public class InspectionFile {
             .uploaderEquipment(uploaderEquipment)
             .filePath(filePath)
             .build();
+    }
+
+    public void updateInfo(String sensorId, String uploaderEquipment, String filePath) {
+        this.sensorId = sensorId;
+        this.uploaderEquipment = uploaderEquipment;
+        this.filePath = filePath;
     }
 }
