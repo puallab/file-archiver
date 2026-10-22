@@ -1,5 +1,7 @@
 package com.filearchiver.inspection.domain;
 
+import com.filearchiver.global.exception.BusinessException;
+import com.filearchiver.global.exception.ErrorCode;
 import com.filearchiver.packing.domain.Product;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -72,7 +74,7 @@ public class InspectionFile {
     ) {
 
         if (inspectedAt.isAfter(LocalDateTime.now())) {
-            throw new IllegalArgumentException("검사시간은 미래일 수 없습니다: " + inspectedAt);
+            throw new BusinessException(ErrorCode.INVALID_INSPECTION_TIME);
         }
 
         return InspectionFile.builder()
