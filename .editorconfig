@@ -1,6 +1,29 @@
 root = true
 
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.bat]
+end_of_line = crlf
+
 [*.java]
+ij_continuation_indent_size = 8
+# import를 와일드카드(*)로 합치지 않는다
+ij_java_class_count_to_use_import_on_demand = 999
+ij_java_names_count_to_use_import_on_demand = 999
+# import 순서: 일반 → javax·java → static (IntelliJ 기본값)
+ij_java_imports_layout = *,|,javax.**,java.**,|,$*
 ij_java_method_parameters_wrap = on_every_item
 ij_java_method_parameters_new_line_after_left_paren = true
 ij_java_method_parameters_right_paren_on_new_line = true
