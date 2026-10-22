@@ -89,6 +89,7 @@ file-archiver는 설비가 만든 검사 파일을 모아 박스·출하 단위�
 
 | 날짜 | 결정 | 이유 | 버린 대안 |
 | --- | --- | --- | --- |
+| 2026-10-22 | 오류 본문은 직접 정의한 `{code, message}`로 하고, 성공 응답은 감싸지 않는다. 성공·실패는 HTTP 상태 코드로 구분한다. 오류 코드는 도메인 접두어 + 번호(`ISP01`) | 호출자인 agent는 상태 코드만으로 처리를 정할 수 있다. 공통 래퍼는 상태 코드와 `success`가 같은 정보를 두 번 말하고 controller마다 감싸야 한다. ProblemDetail은 Spring 기본 응답을 고치려면 `ResponseEntityExceptionHandler` 오버라이드가 필요해 구성이 복잡하다 | RFC 9457 ProblemDetail, 성공·실패 공통 래퍼(`success`, `data`, `error`) |
 | 2026-10-22 | inspection\_file에 UNIQUE(product\_id, inspected\_at)를 다시 건다. 같은 컬럼의 인덱스는 UNIQUE가 대신한다. 기존 행은 계속 애플리케이션 조회로 먼저 찾는다 (2026-10-18 결정 변경) | 동시에 같은 등록이 오면 같은 키로 행이 2개 생기고, 그 뒤로 해당 키의 조회(결과 1건을 가정)가 계속 실패한다. 드물어도 생기면 복구되지 않는다 | 애플리케이션 조회만으로 중복 방지, 등록 시 product 행 잠금 |
 | 2026-10-22 | 같은 (product\_id, inspected\_at) 등록이 다시 오면, 제품이 포장 전이면 기존 행의 sensorId·uploaderEquipment·filePath를 요청 값으로 바꾸고, 포장 후면 무시한다. 두 경우 모두 기존 fileId로 201을 준다. 포장 여부는 packaging\_id로 판단한다 | 포장 전에 뒤늦게 올라온 파일을 최신으로 본다. 포장 후에는 file\_id로 고정한 파일이 바뀌면 압축 결과와 DB가 어긋나므로 바꾸지 않는다 | 항상 무시(기존 결정), 항상 교체 |
 | 2026-10-20 | server와 file-agent를 별도 레포로 나누고, server는 Gradle 단일 모듈로 둔다. 둘은 `docs/api.md`의 API 계약으로만 연결된다 | 두 모듈이 공유하는 코드가 없어, 멀티 모듈의 공통 빌드 설정(buildSrc, 버전 카탈로그)은 이득 없이 구성만 복잡하게 만들었다 | Gradle 멀티 모듈(`server`, `file-agent`) 한 레포 |
