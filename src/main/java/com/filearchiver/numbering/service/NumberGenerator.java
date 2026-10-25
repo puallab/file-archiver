@@ -1,0 +1,39 @@
+package com.filearchiver.numbering.service;
+
+import com.filearchiver.numbering.domain.NumberCounter;
+import com.filearchiver.numbering.domain.NumberCounterId;
+import com.filearchiver.numbering.domain.NumberRule;
+import com.filearchiver.numbering.domain.NumberRuleType;
+import com.filearchiver.numbering.infrastructure.persistence.NumberCounterRepository;
+import com.filearchiver.numbering.infrastructure.persistence.NumberRuleRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class NumberGenerator {
+    private final NumberRuleRepository numberRuleRepository;
+    private final NumberCounterRepository numberCounterRepository;
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public String generatePackagingNumber(){
+
+        NumberRuleType packagingNo = NumberRuleType.PACKAGING_NO;
+
+        NumberRule numberRule = numberRuleRepository.findByIdWithLock(packagingNo)
+                .orElseThrow(() -> new IllegalStateException("존재하지 않는 Numbering 규칙입니다."));
+
+        //당일 발급된 id 조회(없으면 신규 발급)해서 value 증가.
+        NumberCounterId todayId = NumberCounterId.todayId(packagingNo);
+        NumberCounter numberCounter = numberCounterRepository.findById(todayId)
+                .orElseGet(() -> NumberCounter.start(todayId));
+
+        numberCounter.increaseLastValue();
+
+        numberCounterRepository.save(numberCounter);
+
+        return numberRule.convertFormat(numberCounter.getIssuedDate(), numberCounter.getLastValue());
+    }
+}
