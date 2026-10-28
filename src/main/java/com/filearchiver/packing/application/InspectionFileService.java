@@ -1,10 +1,9 @@
-package com.filearchiver.inspection.service;
+package com.filearchiver.packing.application;
 
-import com.filearchiver.inspection.domain.InspectionFile;
-import com.filearchiver.inspection.infrastructure.persistence.InspectionFileRepository;
-import com.filearchiver.inspection.presentation.dto.InspectionFileDto;
+import com.filearchiver.packing.domain.InspectionFile;
 import com.filearchiver.packing.domain.Product;
-import com.filearchiver.packing.service.ProductService;
+import com.filearchiver.packing.infrastructure.persistence.InspectionFileRepository;
+import com.filearchiver.packing.presentation.dto.InspectionFileDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -1,4 +1,4 @@
-package com.filearchiver.inspection.presentation.dto;
+package com.filearchiver.packing.presentation.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

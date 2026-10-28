@@ -1,8 +1,7 @@
-package com.filearchiver.inspection.domain;
+package com.filearchiver.packing.domain;
 
 import com.filearchiver.global.exception.BusinessException;
 import com.filearchiver.global.exception.ErrorCode;
-import com.filearchiver.packing.domain.Product;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
