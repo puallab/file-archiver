@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: file-archiver
+  datasource:
+    url: jdbc:postgresql://localhost:5432/file_archiver
+    username: archiver
+    password: archiver
+  jpa:
+    hibernate:
+      ddl-auto: update

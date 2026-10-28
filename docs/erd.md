@@ -1,18 +1,18 @@
 # file-archiver ERD
 
-### inspection_file: 업로드된 검사 파일 (재검사 포함, INSERT만 함)
+### inspection_file: 업로드된 검사 파일 (재검사 포함)
 
 | 컬럼 | 타입 | 키 | NULL | 설명 |
 |---|---|---|---|---|
 | file_id | bigint | PK | N | 대리키 |
-| product_id | bigint | FK → product, IDX① | N | 제품 |
-| inspected_at | timestamp | IDX① | N | 검사 시각 |
+| product_id | bigint | FK → product, UK① | N | 제품 |
+| inspected_at | timestamp | UK① | N | 검사 시각 |
 | sensor_id | varchar | | Y | 첫 공정 설비 값, 참고용 |
 | uploader_equipment | varchar | | Y | 업로드한 마지막 공정 설비, 참고용 |
 | file_path | varchar | | N | 스토리지 key |
 | created_at | timestamp | | N | 등록 시각. 어떤 포장에도 쓰이지 않은 파일을 정리하는 기준 |
 
-IDX① = (product_id, inspected_at). 제품별 최신 파일 조회와 중복 등록 확인에 써요. 중복은 애플리케이션에서 막아요.
+UK① = UNIQUE(product_id, inspected_at). 제품별 최신 파일 조회와 중복 등록 확인에 써요. 등록은 애플리케이션 조회로 기존 행을 먼저 찾고, 동시에 들어온 중복은 이 제약이 막아요. 같은 키로 다시 오면 제품이 포장 전일 때만 sensor_id·uploader_equipment·file_path를 바꿔요.
 
 ### product: 제품 1개당 1행, 현재 상태
 
