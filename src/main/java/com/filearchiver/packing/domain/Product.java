@@ -45,4 +45,8 @@ public class Product {
         return this.packaging != null;
     }
 
+    public void pack(Packaging packaging){
+        this.packaging = packaging;
+    }
+
 }

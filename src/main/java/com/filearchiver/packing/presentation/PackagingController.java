@@ -1,7 +1,9 @@
 package com.filearchiver.packing.presentation;
 
 import com.filearchiver.packing.presentation.dto.PackagingDto;
+import com.filearchiver.packing.service.PackagingService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -15,12 +17,16 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/packagings")
+@RequiredArgsConstructor
 public class PackagingController {
+
+    private final PackagingService packagingService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public String createPackaging(@Valid @RequestBody PackagingDto.CreateRequest request) {
-        return "OK";
+    public PackagingDto.PackResponse createPackaging(@Valid @RequestBody PackagingDto.PackRequest request) {
+
+        return packagingService.pack(request);
     }
 
     @DeleteMapping("/{id}")
