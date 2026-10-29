@@ -15,17 +15,17 @@ public final class InspectionFileDto {
         @NotBlank
         String serial,
 
-        String sensorId,
-
         @NotNull
         LocalDateTime inspectedAt,
 
+        String sensorId,
+
+        String uploaderEquipment,
+
         @NotBlank
         @Size(max = 500)
-        String filePath,
-
-        String uploaderEquipment
-    ) {
+        String filePath
+        ) {
     }
 
     public record RegisterResponse(
