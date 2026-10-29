@@ -17,10 +17,10 @@ file-archiver/
 ├── build.gradle
 ├── docker-compose.yml     # PostgreSQL, MinIO
 └── src/main/java/com/filearchiver/
+    ├── packing/           # 검사 파일 등록·포장·출하·제품 (비즈니스 규약)
     ├── file/              # storage 읽기·쓰기, zip 생성·업로드
-    ├── inspection/        # 검사 파일 등록
-    ├── packing/           # 포장·출하·제품 (shipment·packaging·product)
-    ├── job/               # PENDING 작업을 집어 가는 Worker, 재처리
-    └── global/            # 공통 설정, 예외 처리
+    ├── worker/            # PENDING 작업 처리, 재처리
+    └── config/            # 설정, 기동 시 초기화
 ```
 
+덩어리 안은 presentation, application, domain, infrastructure 계층으로 나눈다.
