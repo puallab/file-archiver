@@ -27,12 +27,9 @@ public class InspectionFileService {
                         return entity.getId();
                     }
 
-                    /**
-                     *  이 사이는 어떻게 방어?
-                     */
-
-                    //포장이 되지 않은 상태라면 뒤늦게 올라온 검사 파일을 최신으로 바라본다.
-                    entity.updateInfo(
+                    inspectionFileRepository.updateIfNotPacked(
+                            product,
+                            request.inspectedAt(),
                             request.sensorId(),
                             request.uploaderEquipment(),
                             request.filePath()
