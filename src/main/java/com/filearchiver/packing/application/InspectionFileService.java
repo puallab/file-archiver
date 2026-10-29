@@ -1,10 +1,9 @@
-package com.filearchiver.inspection.service;
+package com.filearchiver.packing.application;
 
-import com.filearchiver.inspection.domain.InspectionFile;
-import com.filearchiver.inspection.infrastructure.persistence.InspectionFileRepository;
-import com.filearchiver.inspection.presentation.dto.InspectionFileDto;
+import com.filearchiver.packing.domain.InspectionFile;
 import com.filearchiver.packing.domain.Product;
-import com.filearchiver.packing.service.ProductService;
+import com.filearchiver.packing.infrastructure.persistence.InspectionFileRepository;
+import com.filearchiver.packing.presentation.dto.InspectionFileDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,12 +27,9 @@ public class InspectionFileService {
                         return entity.getId();
                     }
 
-                    /**
-                     *  이 사이는 어떻게 방어?
-                     */
-
-                    //포장이 되지 않은 상태라면 뒤늦게 올라온 검사 파일을 최신으로 바라본다.
-                    entity.updateInfo(
+                    inspectionFileRepository.updateIfNotPacked(
+                            product,
+                            request.inspectedAt(),
                             request.sensorId(),
                             request.uploaderEquipment(),
                             request.filePath()

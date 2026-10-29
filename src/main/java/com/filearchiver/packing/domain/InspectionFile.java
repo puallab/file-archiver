@@ -1,8 +1,6 @@
-package com.filearchiver.inspection.domain;
+package com.filearchiver.packing.domain;
 
-import com.filearchiver.global.exception.BusinessException;
-import com.filearchiver.global.exception.ErrorCode;
-import com.filearchiver.packing.domain.Product;
+import com.filearchiver.packing.domain.exception.InvalidInspectionTimeException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -73,8 +71,9 @@ public class InspectionFile {
         String filePath
     ) {
 
-        if (inspectedAt.isAfter(LocalDateTime.now())) {
-            throw new BusinessException(ErrorCode.INVALID_INSPECTION_TIME);
+        LocalDateTime checkedTime = LocalDateTime.now();
+        if (inspectedAt.isAfter(checkedTime)) {
+            throw new InvalidInspectionTimeException(inspectedAt, checkedTime);
         }
 
         return InspectionFile.builder()
