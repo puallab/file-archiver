@@ -9,7 +9,7 @@ import java.io.Serializable;
 import java.time.LocalDate;
 
 @Embeddable
-public record NumberCounterId (
+public record NumberCounterId(
         @Enumerated(EnumType.STRING)
         @Column(name = "rule")
         NumberRuleType rule,

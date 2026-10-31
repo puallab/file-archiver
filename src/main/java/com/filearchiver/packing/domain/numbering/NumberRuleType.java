@@ -17,12 +17,12 @@ public enum NumberRuleType {
 
     public String convertFormat(LocalDate date, int count) {
 
-        if(String.valueOf(count).length() > this.digits){
+        if (String.valueOf(count).length() > this.digits) {
             throw new IllegalStateException(
                     "발급 요청 번호가 최대 자리수를 초과하였습니다. rule = %s, digits = %d, count = %d".formatted(this.name(), this.digits, count)
             );
         }
 
-        return date.format(this.dateTimeFormatter) +"-"+ String.format("%0" + this.digits + "d", count);
+        return date.format(this.dateTimeFormatter) + "-" + String.format("%0" + this.digits + "d", count);
     }
 }

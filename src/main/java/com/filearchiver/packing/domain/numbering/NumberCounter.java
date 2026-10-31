@@ -17,20 +17,21 @@ public class NumberCounter {
 
     private int lastValue;
 
-    private NumberCounter(NumberCounterId numberCounterId){
+    private NumberCounter(NumberCounterId numberCounterId) {
         this.numberCounterId = numberCounterId;
         this.lastValue = 0;
     }
 
-    public static NumberCounter start(NumberCounterId ruleId){
+    public static NumberCounter start(NumberCounterId ruleId) {
         return new NumberCounter(ruleId);
     }
 
-    public void increaseLastValue(){
+    public NumberCounter increaseLastValue() {
         ++lastValue;
+        return this;
     }
 
-    public LocalDate getIssuedDate(){
+    public LocalDate getIssuedDate() {
         return numberCounterId.issuedDate();
     }
 }

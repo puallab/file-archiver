@@ -20,17 +20,17 @@ public class NumberRule {
     private NumberRuleType rule;
 
     @Builder(access = AccessLevel.PRIVATE)
-    private NumberRule(NumberRuleType rule){
+    private NumberRule(NumberRuleType rule) {
         this.rule = rule;
     }
 
-    public static NumberRule createRule(NumberRuleType rule){
+    public static NumberRule createRule(NumberRuleType rule) {
         return NumberRule.builder()
                 .rule(rule)
                 .build();
     }
 
-    public String convertFormat(LocalDate date, int value){
+    public String convertFormat(LocalDate date, int value) {
         return this.rule.convertFormat(date, value);
     }
 }

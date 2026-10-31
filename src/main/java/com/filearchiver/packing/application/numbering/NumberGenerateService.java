@@ -18,21 +18,16 @@ public class NumberGenerateService {
     private final NumberCounterRepository numberCounterRepository;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public String generatePackagingNumber(){
+    public String nextSequenceNumber(NumberRuleType ruleType) {
 
-        NumberRuleType packagingNo = NumberRuleType.PACKAGING_NO;
-
-        NumberRule numberRule = numberRuleRepository.findByIdWithLock(packagingNo)
+        NumberRule numberRule = numberRuleRepository.findByIdWithLock(ruleType)
                 .orElseThrow(() -> new IllegalStateException("존재하지 않는 Numbering 규칙입니다."));
 
         //당일 발급된 id 조회(없으면 신규 발급)해서 value 증가.
-        NumberCounterId todayId = NumberCounterId.todayId(packagingNo);
+        NumberCounterId todayId = NumberCounterId.todayId(ruleType);
         NumberCounter numberCounter = numberCounterRepository.findById(todayId)
-                .orElseGet(() -> NumberCounter.start(todayId));
-
-        numberCounter.increaseLastValue();
-
-        numberCounterRepository.save(numberCounter);
+                .orElseGet(() -> numberCounterRepository.save(NumberCounter.start(todayId)))
+                .increaseLastValue();
 
         return numberRule.convertFormat(numberCounter.getIssuedDate(), numberCounter.getLastValue());
     }
