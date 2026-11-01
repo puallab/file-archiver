@@ -11,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -39,8 +40,26 @@ public class Packaging {
     @JoinColumn(name = "shipment_id")
     private Shipment shipment;
 
+    private String zipKey;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
     private LocalDateTime completedAt;
+
+    @Builder(access = AccessLevel.PRIVATE)
+    private Packaging(String packagingNo, PackagingType type, Status status){
+        this.packagingNo = packagingNo;
+        this.type = type;
+        this.status = status;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public static Packaging createBox(String packagingNo){
+        return Packaging.builder()
+                .packagingNo(packagingNo)
+                .type(PackagingType.BOX)
+                .status(Status.PENDING)
+                .build();
+    }
 }
