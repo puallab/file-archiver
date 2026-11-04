@@ -12,8 +12,8 @@ public class ProductService {
     private final ProductRepository productRepository;
 
     @Transactional
-    public Product registerIfAbsent(String serial) {
-        return productRepository.findBySerial(serial)
+    public Product findOrCreateWithLock(String serial) {
+        return productRepository.findWithLockBySerial(serial)
             .orElseGet(() -> productRepository.save(Product.create(serial)));
     }
 }

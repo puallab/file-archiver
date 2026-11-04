@@ -17,7 +17,7 @@ public class InspectionFileService {
     @Transactional
     public Long register(InspectionFileDto.RegisterRequest request) {
 
-        Product product = productService.registerIfAbsent(request.serial());
+        Product product = productService.findOrCreateWithLock(request.serial());
 
         return inspectionFileRepository.findByProductAndInspectedAt(product, request.inspectedAt())
                 .map(entity -> {
@@ -27,13 +27,7 @@ public class InspectionFileService {
                         return entity.getId();
                     }
 
-                    inspectionFileRepository.updateIfNotPacked(
-                            product,
-                            request.inspectedAt(),
-                            request.sensorId(),
-                            request.uploaderEquipment(),
-                            request.filePath()
-                    );
+                    entity.updateInfo(request.sensorId(), request.uploaderEquipment(), request.filePath());
 
                     return entity.getId();
                 }).orElseGet(() -> {
