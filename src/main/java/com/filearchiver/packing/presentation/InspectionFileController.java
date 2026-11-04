@@ -1,7 +1,7 @@
-package com.filearchiver.inspection.presentation;
+package com.filearchiver.packing.presentation;
 
-import com.filearchiver.inspection.presentation.dto.InspectionFileDto;
-import com.filearchiver.inspection.service.InspectionFileService;
+import com.filearchiver.packing.presentation.dto.InspectionFileDto;
+import com.filearchiver.packing.application.InspectionFileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
