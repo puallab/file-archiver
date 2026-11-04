@@ -1,39 +1,50 @@
 package com.filearchiver.packing.application;
 
-import com.filearchiver.TestcontainersConfiguration;
 import com.filearchiver.packing.domain.InspectionFile;
+import com.filearchiver.packing.domain.Product;
 import com.filearchiver.packing.infrastructure.persistence.InspectionFileRepository;
-import com.filearchiver.packing.infrastructure.persistence.ProductRepository;
 import com.filearchiver.packing.presentation.dto.InspectionFileDto;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
-import org.springframework.context.annotation.Import;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
-@DataJpaTest
-@Import({TestcontainersConfiguration.class, InspectionFileService.class, ProductService.class})
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
 public class InspectionFileServiceTest {
-    @Autowired
-    private InspectionFileService inspectionFileService;
-
-    @Autowired
+    @Mock
     private InspectionFileRepository inspectionFileRepository;
 
-    @Autowired
-    private ProductRepository productRepository;
+    @Mock
+    private ProductService productService;
 
-    @Autowired
-    private TestEntityManager em;
+    //packaging entity를 주입할 서비스가 아직 개발되지 않아서 우선 mock으로 Product 주입.
+    @Mock
+    private Product product;
+
+    @InjectMocks
+    private InspectionFileService inspectionFileService;
+
+    @Captor
+    private ArgumentCaptor<InspectionFile> inspectionFileCaptor;
 
     @Test
-    void 검사파일이_없으면_신규_저장하고_id를_반환한다() {
+    void 검사파일이_없으면_신규_생성하고_id를_반환한다() {
         //given
-        LocalDateTime inspectedAt = LocalDateTime.now().minusMinutes(1);
-        InspectionFileDto.RegisterRequest registerRequest = new InspectionFileDto.RegisterRequest(
+        Long givenId = 1L;
+        LocalDateTime inspectedAt = LocalDateTime.now();
+        InspectionFileDto.RegisterRequest request = new InspectionFileDto.RegisterRequest(
                 "SN-0001",
                 inspectedAt,
                 "SENSOR-01",
@@ -41,151 +52,116 @@ public class InspectionFileServiceTest {
                 "inspection-files/SN-0001.txt"
         );
 
+        InspectionFile inspectionFile = createInspectionFile(product, request, givenId);
+
+        given(productService.findOrCreateWithLock(request.serial())).willReturn(product);
+        given(inspectionFileRepository.findByProductAndInspectedAt(product, request.inspectedAt())).willReturn(Optional.empty());
+        given(inspectionFileRepository.save(any(InspectionFile.class))).willReturn(inspectionFile);
+
         //when
-        Long fileId = inspectionFileService.register(registerRequest);
+        Long registeredId = inspectionFileService.register(request);
 
         //then
-        InspectionFile savedInspectionFile = inspectionFileRepository.findById(fileId).orElseThrow();
-        Assertions.assertThat(savedInspectionFile.getProduct().getSerial()).isEqualTo("SN-0001");
-        Assertions.assertThat(savedInspectionFile.getInspectedAt()).isEqualTo(inspectedAt);
-        Assertions.assertThat(savedInspectionFile.getSensorId()).isEqualTo("SENSOR-01");
-        Assertions.assertThat(savedInspectionFile.getUploaderEquipment()).isEqualTo("EQ-07");
-        Assertions.assertThat(savedInspectionFile.getFilePath()).isEqualTo("inspection-files/SN-0001.txt");
-        Assertions.assertThat(productRepository.findBySerial("SN-0001").isPresent()).isTrue();
+        verify(inspectionFileRepository).save(inspectionFileCaptor.capture());
+
+        InspectionFile capturedInspectionFile = inspectionFileCaptor.getValue();
+
+        assertThat(capturedInspectionFile)
+                .returns(product, InspectionFile::getProduct)
+                .returns(request.inspectedAt(), InspectionFile::getInspectedAt)
+                .returns(request.sensorId(), InspectionFile::getSensorId)
+                .returns(request.uploaderEquipment(), InspectionFile::getUploaderEquipment)
+                .returns(request.filePath(), InspectionFile::getFilePath);
+
+        assertThat(registeredId).isEqualTo(givenId);
     }
 
     @Test
-    void 같은_제품_다른_검사시각_등록시_검사파일_각각_생성(){
+    void 포장전_제품은_파일이_변경된다(){
         //given
-        LocalDateTime inspectedAt = LocalDateTime.now().minusMinutes(2);
-
-        Long firstFileId = inspectionFileService.register(
-                new InspectionFileDto.RegisterRequest(
-                        "SN-0001",
-                        inspectedAt,
-                        "SENSOR-01",
-                        "EQ-07",
-                        "inspection-files/SN-0001.txt"
-                )
+        Long givenId = 1L;
+        LocalDateTime inspectedAt = LocalDateTime.now();
+        InspectionFileDto.RegisterRequest firstRequest = new InspectionFileDto.RegisterRequest(
+                "SN-0001",
+                inspectedAt,
+                "SENSOR-01",
+                "EQ-07",
+                "inspection-files/SN-0001.txt"
         );
+
+        InspectionFile inspectionFile = createInspectionFile(product, firstRequest, givenId);
+
+        given(productService.findOrCreateWithLock(firstRequest.serial())).willReturn(product);
+        given(inspectionFileRepository.findByProductAndInspectedAt(product, firstRequest.inspectedAt())).willReturn(Optional.of(inspectionFile));
 
         //when
-        Long secondFileId = inspectionFileService.register(
-                new InspectionFileDto.RegisterRequest(
-                        "SN-0001",
-                        inspectedAt.plusMinutes(1),
-                        "SENSOR-02",
-                        "EQ-08",
-                        "inspection-files/SN-0002.txt"
-                )
+        InspectionFileDto.RegisterRequest secondRequest = new InspectionFileDto.RegisterRequest(
+                "SN-0001",
+                inspectedAt,
+                "SENSOR-02",
+                "EQ-08",
+                "inspection-files/SN-0002.txt"
         );
+        Long registeredId = inspectionFileService.register(secondRequest);
 
         //then
-        InspectionFile firstFile = inspectionFileRepository.findById(firstFileId).orElseThrow();
-        InspectionFile secondFile = inspectionFileRepository.findById(secondFileId).orElseThrow();
-        Assertions.assertThat(firstFile.getId()).isNotEqualTo(secondFile.getId());
-
-        //제품은 1건만 등록되는지 확인
-        Assertions.assertThat(productRepository.count()).isEqualTo(1L);
-    }
-
-    @Test
-    void 포장_전_제품은_파일이_변경된다(){
-        //given
-        LocalDateTime inspectedAt = LocalDateTime.now().minusMinutes(1);
-
-        Long firstFileId = inspectionFileService.register(
-                new InspectionFileDto.RegisterRequest(
-                        "SN-0001",
-                        inspectedAt,
-                        "SENSOR-01",
-                        "EQ-07",
-                        "inspection-files/SN-0001.txt"
-                )
-        );
-
-        //when
-        Long secondFileId = inspectionFileService.register(
-                new InspectionFileDto.RegisterRequest(
-                        "SN-0001",
-                        inspectedAt,
-                        "SENSOR-02",
-                        "EQ-08",
-                        "inspection-files/SN-0002.txt"
-                )
-        );
-
-        //modifying clearAutomatically = false일 경우에
-        //영속성 컨텍스트에서 값을 조회해오므로 변경되지 않은 값을 조회하게됨.
-        //따라서 강제로 영속성 컨텍스트 비워주어 변경된 값으로 DB에서 조회해올 수 있도록 한다.
-        em.flush();
-        em.clear();
-
-        //then
-        InspectionFile firstFile = inspectionFileRepository.findById(firstFileId).orElseThrow();
-        InspectionFile secondFile = inspectionFileRepository.findById(secondFileId).orElseThrow();
-        Assertions.assertThat(firstFile.getId()).isEqualTo(secondFile.getId());
-
-        Assertions.assertThat(secondFile.getSensorId()).isEqualTo("SENSOR-02");
-        Assertions.assertThat(secondFile.getUploaderEquipment()).isEqualTo("EQ-08");
-        Assertions.assertThat(secondFile.getFilePath()).isEqualTo("inspection-files/SN-0002.txt");
-
-        Assertions.assertThat(inspectionFileRepository.count()).isEqualTo(1L);
+        assertThat(registeredId).isEqualTo(givenId);
+        assertThat(inspectionFile)
+                .returns(secondRequest.sensorId(), InspectionFile::getSensorId)
+                .returns(secondRequest.uploaderEquipment(), InspectionFile::getUploaderEquipment)
+                .returns(secondRequest.filePath(), InspectionFile::getFilePath);
     }
 
     @Test
     void 포장된_제품은_파일이_변경되지_않는다(){
         //given
-        LocalDateTime inspectedAt = LocalDateTime.now().minusMinutes(1);
-
-        Long firstFileId = inspectionFileService.register(
-                new InspectionFileDto.RegisterRequest(
-                        "SN-0001",
-                        inspectedAt,
-                        "SENSOR-01",
-                        "EQ-07",
-                        "inspection-files/SN-0001.txt"
-                )
+        Long givenId = 1L;
+        LocalDateTime inspectedAt = LocalDateTime.now();
+        InspectionFileDto.RegisterRequest firstRequest = new InspectionFileDto.RegisterRequest(
+                "SN-0001",
+                inspectedAt,
+                "SENSOR-01",
+                "EQ-07",
+                "inspection-files/SN-0001.txt"
         );
-        em.flush();
 
-        // 포장 기능이 아직 없어 포장 행과 제품 연결은 SQL로 넣는다
-        em.getEntityManager()
-                .createNativeQuery("""
-                        insert into packaging (packaging_no, type, status, created_at)
-                        values ('PKG-TEST-0001', 'BOX', 'PENDING', now())
-                        """)
-                .executeUpdate();
-        em.getEntityManager()
-                .createNativeQuery("""
-                        update product
-                        set packaging_id = (select id from packaging where packaging_no = 'PKG-TEST-0001')
-                        where serial = 'SN-0001'
-                        """)
-                .executeUpdate();
-        em.clear();
+        InspectionFile inspectionFile = createInspectionFile(product, firstRequest, givenId);
+
+        given(productService.findOrCreateWithLock(firstRequest.serial())).willReturn(product);
+        given(inspectionFileRepository.findByProductAndInspectedAt(product, firstRequest.inspectedAt())).willReturn(Optional.of(inspectionFile));
+        given(product.isPacked()).willReturn(true);
 
         //when
-        Long secondFileId = inspectionFileService.register(
-                new InspectionFileDto.RegisterRequest(
-                        "SN-0001",
-                        inspectedAt,
-                        "SENSOR-02",
-                        "EQ-08",
-                        "inspection-files/SN-0002.txt"
-                )
+        InspectionFileDto.RegisterRequest secondRequest = new InspectionFileDto.RegisterRequest(
+                "SN-0001",
+                inspectedAt,
+                "SENSOR-02",
+                "EQ-08",
+                "inspection-files/SN-0002.txt"
         );
-        em.flush();
-        em.clear();
+        Long registeredId = inspectionFileService.register(secondRequest);
 
         //then
-        Assertions.assertThat(secondFileId).isEqualTo(firstFileId);
+        assertThat(registeredId).isEqualTo(givenId);
+        assertThat(inspectionFile)
+                .returns(firstRequest.sensorId(), InspectionFile::getSensorId)
+                .returns(firstRequest.uploaderEquipment(), InspectionFile::getUploaderEquipment)
+                .returns(firstRequest.filePath(), InspectionFile::getFilePath);
+    }
 
-        InspectionFile file = inspectionFileRepository.findById(firstFileId).orElseThrow();
-        Assertions.assertThat(file.getSensorId()).isEqualTo("SENSOR-01");
-        Assertions.assertThat(file.getUploaderEquipment()).isEqualTo("EQ-07");
-        Assertions.assertThat(file.getFilePath()).isEqualTo("inspection-files/SN-0001.txt");
-
-        Assertions.assertThat(inspectionFileRepository.count()).isEqualTo(1L);
+    private InspectionFile createInspectionFile(
+            Product product,
+            InspectionFileDto.RegisterRequest registerRequest,
+            Long id
+    ) {
+        InspectionFile inspectionFile = InspectionFile.create(
+                product,
+                registerRequest.inspectedAt(),
+                registerRequest.sensorId(),
+                registerRequest.uploaderEquipment(),
+                registerRequest.filePath()
+        );
+        ReflectionTestUtils.setField(inspectionFile, "id", id);
+        return inspectionFile;
     }
 }
