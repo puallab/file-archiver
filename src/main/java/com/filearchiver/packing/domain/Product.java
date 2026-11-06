@@ -1,5 +1,6 @@
 package com.filearchiver.packing.domain;
 
+import com.filearchiver.packing.domain.exception.DuplicatePackAttemptException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -46,6 +47,14 @@ public class Product {
     }
 
     public void pack(Packaging packaging){
+        if (isPacked()) {
+            throw new DuplicatePackAttemptException();
+        }
+
         this.packaging = packaging;
+    }
+
+    public void updateLatestFileId(Long fileId){
+        this.fileId = fileId;
     }
 }

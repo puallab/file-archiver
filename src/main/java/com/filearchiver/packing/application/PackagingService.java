@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,39 +27,35 @@ public class PackagingService {
     private final NumberGenerateService numberGenerator;
 
     @Transactional
-    public PackagingDto.PackResponse pack(PackagingDto.PackRequest request){
+    public PackagingDto.PackResponse pack(PackagingDto.PackRequest request) {
 
         //0.중복 입력 검사
         Set<String> set = new HashSet<>(request.serials());
-        if(set.size() != request.serials().size()){
+        if (set.size() != request.serials().size()) {
             throw new DuplicateSerialInputException();
         }
 
         Packaging box = Packaging.createBox(numberGenerator.nextSequenceNumber(NumberRuleType.PACKAGING_NO));
-
-        //시리얼 중 검사 파일 없으면 거절, 하나라도 포장되어 있으면 거절
-        //product fileId가 없거나. 조회 결과가 전체 수랑 다름.
-        //product에 packaging id가 이미 존재함.
-        List<Product> products = productRepository.findBySerialIn(request.serials())
-                .orElseGet(List::of)
-                .stream()
-                .map(product -> {
-
-                    if (product.isPacked()) {
-                        throw new DuplicatePackAttemptException();
-                    }
-
-                    product.pack(box);
-
-                    return product;
-                })
-                .toList();
-
-        if(products.size() != set.size()){
-            throw new IllegalStateException("검사 파일이 존재하지 않는 Production이 존재합니다.");
-        }
-
         packagingRepository.save(box);
+
+        //시리얼 중 검사 파일 없으면 거절, 하나라도 포장되어 있으면 거
+        //product에 packaging id가 이미 존재함.
+        int updatedRowCount = productRepository.updatePackagingBySerials(box, request.serials());
+
+        //1.잘못된 serial이 들어올 수 있음.
+        //2.이미 포장된 serial이 포함될 수 있음
+        if (updatedRowCount != set.size()) {
+            List<Product> alreadyPackedList = productRepository.findByPackagingIsNotAndSerialIn(box, request.serials());
+
+            //조회되는 product가 없다 -> 애초에 존재하지 않는 serial이 들어왔다.
+            if (alreadyPackedList.isEmpty()) {
+                throw new IllegalArgumentException("잘못된 serial이 전달됨");
+            }
+
+            throw new DuplicatePackAttemptException(alreadyPackedList.stream()
+                    .map(Product::getSerial)
+                    .collect(Collectors.joining(",")));
+        }
 
         return new PackagingDto.PackResponse(box.getPackagingNo(), LocalDateTime.now());
     }

@@ -90,4 +90,9 @@ public class InspectionFile {
         this.uploaderEquipment = uploaderEquipment;
         this.filePath = filePath;
     }
+
+    public InspectionFile getLatestWith(InspectionFile targetFile){
+        if(null == targetFile) return this;
+        return this.inspectedAt.isAfter(targetFile.inspectedAt) ? this : targetFile;
+    }
 }
