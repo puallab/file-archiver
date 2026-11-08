@@ -48,13 +48,18 @@ public class Product {
 
     public void pack(Packaging packaging){
         if (isPacked()) {
-            throw new DuplicatePackAttemptException();
+            throw new DuplicatePackAttemptException(this.serial);
         }
 
         this.packaging = packaging;
     }
 
-    public void updateLatestFileId(Long fileId){
-        this.fileId = fileId;
+    public void applyInspectionFile(InspectionFile latestInspectionFile, InspectionFile newInspectionFile) {
+        if(isPacked()){
+            return;
+        }
+
+        InspectionFile latestWith = newInspectionFile.getLatestWith(latestInspectionFile);
+        this.fileId = latestWith.getId();
     }
 }

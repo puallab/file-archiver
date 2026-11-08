@@ -19,16 +19,9 @@ public class InspectionFileService {
 
         Product product = productService.findOrCreateWithLock(request.serial());
 
-        InspectionFile inspectionFile = inspectionFileRepository.findByProductAndInspectedAt(product, request.inspectedAt())
+        InspectionFile newInspectionFile = inspectionFileRepository.findByFilePath(request.filePath())
                 .map(findInspectionFile -> {
-
-                    //이미 포장이 완료된 이후에 동일 검사시각으로 검사파일 등록 요청이 온 경우엔 무시한다.
-                    if (product.isPacked()) {
-                        return findInspectionFile;
-                    }
-
-                    findInspectionFile.updateInfo(request.sensorId(), request.uploaderEquipment(), request.filePath());
-
+                    findInspectionFile.updateInfo(request.sensorId(), request.uploaderEquipment());
                     return findInspectionFile;
                 }).orElseGet(() -> {
                     InspectionFile newFile = InspectionFile.create(
@@ -42,24 +35,19 @@ public class InspectionFileService {
                     return inspectionFileRepository.save(newFile);
                 });
 
-        //최신 fileId로 product에 넣어준다.
-        if (product.getFileId() != null) {
-            InspectionFile latestFile = inspectionFileRepository.findById(product.getFileId()).orElseGet(()-> inspectionFile);
 
-            product.updateLatestFileId(inspectionFile.getLatestWith(latestFile).getId());
-        }
+        InspectionFile latestInspectionFile = getLatestInspectionFile(product, newInspectionFile);
 
-        return product.getFileId();
+        product.applyInspectionFile(latestInspectionFile, newInspectionFile);
+
+        return newInspectionFile.getId();
     }
 
-    private Long getLatestFileId(Product product, InspectionFile inspectionFile){
+    //product에 연결된 file이 존재하면 최신 검사파일로 반환한다. 검사파일이 존재하지 않으면 신규로 들어온 파일로 대체한다.
+    private InspectionFile getLatestInspectionFile(Product product, InspectionFile newInspectionFile) {
         if(product.getFileId() != null){
-            InspectionFile latestFile = inspectionFileRepository.findById(product.getFileId()).orElseThrow();
-
-            product.updateLatestFileId(inspectionFile.getLatestWith(latestFile).getId());
-            return latestFile.getId();
-        }else{
-            return null;
+            return inspectionFileRepository.findById(product.getFileId()).orElseGet(()-> newInspectionFile);
         }
+        return newInspectionFile;
     }
 }
