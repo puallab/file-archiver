@@ -1,6 +1,7 @@
 package com.filearchiver.packing.application;
 
 import com.filearchiver.TestcontainersConfiguration;
+import com.filearchiver.packing.domain.Product;
 import com.filearchiver.packing.infrastructure.persistence.InspectionFileRepository;
 import com.filearchiver.packing.infrastructure.persistence.ProductRepository;
 import com.filearchiver.packing.presentation.dto.InspectionFileDto;
@@ -41,14 +42,17 @@ public class InspectionFileServiceIntegrationTest {
     }
 
     @Test
-    void 같은_제품_다른_검사시각_등록시_제품은_1개_검사파일은_각각_생성(){
+    void 같은_제품_신규_검사파일_등록시_제품은_1개_검사파일은_각각_생성(){
         //given
         LocalDateTime inspectedAt = LocalDateTime.now();
+        LocalDateTime firstFileInspectedTime = inspectedAt.minusSeconds(1);
+        LocalDateTime secondFileInspectedTime = inspectedAt.minusSeconds(2);
+
 
         Long firstFileId = inspectionFileService.register(
                 new InspectionFileDto.RegisterRequest(
                         "SN-0001",
-                        inspectedAt.minusMinutes(2),
+                        firstFileInspectedTime,
                         "SENSOR-01",
                         "EQ-07",
                         "inspection-files/SN-0001.txt"
@@ -59,7 +63,7 @@ public class InspectionFileServiceIntegrationTest {
         Long secondFileId = inspectionFileService.register(
                 new InspectionFileDto.RegisterRequest(
                         "SN-0001",
-                        inspectedAt.minusMinutes(1),
+                        secondFileInspectedTime,
                         "SENSOR-02",
                         "EQ-08",
                         "inspection-files/SN-0002.txt"
@@ -72,6 +76,9 @@ public class InspectionFileServiceIntegrationTest {
 
         //제품은 1개만 생성된다
         assertThat(productRepository.count()).isEqualTo(1L);
+        //제품의 fileId는 최근 검사파일로 저장된다.
+        Product product = productRepository.findAll().getFirst();
+        assertThat(product.getFileId()).isEqualTo(firstFileId);
     }
 
     @Test

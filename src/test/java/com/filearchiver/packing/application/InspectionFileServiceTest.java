@@ -19,6 +19,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,7 +30,6 @@ public class InspectionFileServiceTest {
     @Mock
     private ProductService productService;
 
-    //packaging entity를 주입할 서비스가 아직 개발되지 않아서 우선 mock으로 Product 주입.
     @Mock
     private Product product;
 
@@ -43,19 +43,12 @@ public class InspectionFileServiceTest {
     void 검사파일이_없으면_신규_생성하고_id를_반환한다() {
         //given
         Long givenId = 1L;
-        LocalDateTime inspectedAt = LocalDateTime.now();
-        InspectionFileDto.RegisterRequest request = new InspectionFileDto.RegisterRequest(
-                "SN-0001",
-                inspectedAt,
-                "SENSOR-01",
-                "EQ-07",
-                "inspection-files/SN-0001.txt"
-        );
+        InspectionFileDto.RegisterRequest request = createRequest("inspection-files/SN-0001.txt");
 
         InspectionFile inspectionFile = createInspectionFile(product, request, givenId);
 
         given(productService.findOrCreateWithLock(request.serial())).willReturn(product);
-        given(inspectionFileRepository.findByProductAndInspectedAt(product, request.inspectedAt())).willReturn(Optional.empty());
+        given(inspectionFileRepository.findByFilePath(request.filePath())).willReturn(Optional.empty());
         given(inspectionFileRepository.save(any(InspectionFile.class))).willReturn(inspectionFile);
 
         //when
@@ -77,76 +70,57 @@ public class InspectionFileServiceTest {
     }
 
     @Test
-    void 포장전_제품은_파일이_변경된다(){
+    void 같은_filePath가_다시_오면_신규생성하지_않고_기존_id를_반환한다() {
         //given
-        Long givenId = 1L;
-        LocalDateTime inspectedAt = LocalDateTime.now();
-        InspectionFileDto.RegisterRequest firstRequest = new InspectionFileDto.RegisterRequest(
-                "SN-0001",
-                inspectedAt,
-                "SENSOR-01",
-                "EQ-07",
-                "inspection-files/SN-0001.txt"
-        );
+        Long existingId = 1L;
+        InspectionFileDto.RegisterRequest request = createRequest("inspection-files/SN-0001.txt");
 
-        InspectionFile inspectionFile = createInspectionFile(product, firstRequest, givenId);
+        InspectionFile existingFile = createInspectionFile(product, request, existingId);
 
-        given(productService.findOrCreateWithLock(firstRequest.serial())).willReturn(product);
-        given(inspectionFileRepository.findByProductAndInspectedAt(product, firstRequest.inspectedAt())).willReturn(Optional.of(inspectionFile));
+        given(productService.findOrCreateWithLock(request.serial())).willReturn(product);
+        given(inspectionFileRepository.findByFilePath(request.filePath())).willReturn(Optional.of(existingFile));
 
         //when
-        InspectionFileDto.RegisterRequest secondRequest = new InspectionFileDto.RegisterRequest(
-                "SN-0001",
-                inspectedAt,
-                "SENSOR-02",
-                "EQ-08",
-                "inspection-files/SN-0002.txt"
-        );
-        Long registeredId = inspectionFileService.register(secondRequest);
+        Long registeredId = inspectionFileService.register(request);
 
         //then
-        assertThat(registeredId).isEqualTo(givenId);
-        assertThat(inspectionFile)
-                .returns(secondRequest.sensorId(), InspectionFile::getSensorId)
-                .returns(secondRequest.uploaderEquipment(), InspectionFile::getUploaderEquipment)
-                .returns(secondRequest.filePath(), InspectionFile::getFilePath);
+        verify(inspectionFileRepository, never()).save(any(InspectionFile.class));
+        assertThat(registeredId).isEqualTo(existingId);
     }
 
     @Test
-    void 포장된_제품은_파일이_변경되지_않는다(){
+    void 등록된_제품으로_파일등록_요청이오면_파일_비교한다() {
         //given
-        Long givenId = 1L;
-        LocalDateTime inspectedAt = LocalDateTime.now();
-        InspectionFileDto.RegisterRequest firstRequest = new InspectionFileDto.RegisterRequest(
-                "SN-0001",
-                inspectedAt,
-                "SENSOR-01",
-                "EQ-07",
-                "inspection-files/SN-0001.txt"
-        );
+        Long latestId = 1L;
+        Long newId = 2L;
+        InspectionFileDto.RegisterRequest latestRequest = createRequest("inspection-files/SN-0001-a.txt");
+        InspectionFileDto.RegisterRequest newRequest = createRequest("inspection-files/SN-0001-b.txt");
 
-        InspectionFile inspectionFile = createInspectionFile(product, firstRequest, givenId);
+        InspectionFile latestFile = createInspectionFile(product, latestRequest, latestId);
+        InspectionFile newFile = createInspectionFile(product, newRequest, newId);
 
-        given(productService.findOrCreateWithLock(firstRequest.serial())).willReturn(product);
-        given(inspectionFileRepository.findByProductAndInspectedAt(product, firstRequest.inspectedAt())).willReturn(Optional.of(inspectionFile));
-        given(product.isPacked()).willReturn(true);
+        given(productService.findOrCreateWithLock(newRequest.serial())).willReturn(product);
+        given(inspectionFileRepository.findByFilePath(newRequest.filePath())).willReturn(Optional.empty());
+        given(inspectionFileRepository.save(any(InspectionFile.class))).willReturn(newFile);
+        given(product.getFileId()).willReturn(latestId);
+        given(inspectionFileRepository.findById(latestId)).willReturn(Optional.of(latestFile));
 
         //when
-        InspectionFileDto.RegisterRequest secondRequest = new InspectionFileDto.RegisterRequest(
-                "SN-0001",
-                inspectedAt,
-                "SENSOR-02",
-                "EQ-08",
-                "inspection-files/SN-0002.txt"
-        );
-        Long registeredId = inspectionFileService.register(secondRequest);
+        Long registeredId = inspectionFileService.register(newRequest);
 
         //then
-        assertThat(registeredId).isEqualTo(givenId);
-        assertThat(inspectionFile)
-                .returns(firstRequest.sensorId(), InspectionFile::getSensorId)
-                .returns(firstRequest.uploaderEquipment(), InspectionFile::getUploaderEquipment)
-                .returns(firstRequest.filePath(), InspectionFile::getFilePath);
+        verify(product).applyInspectionFile(latestFile, newFile);
+        assertThat(registeredId).isEqualTo(newId);
+    }
+
+    private InspectionFileDto.RegisterRequest createRequest(String filePath) {
+        return new InspectionFileDto.RegisterRequest(
+                "SN-0001",
+                LocalDateTime.now().minusMinutes(1),
+                "SENSOR-01",
+                "EQ-07",
+                filePath
+        );
     }
 
     private InspectionFile createInspectionFile(

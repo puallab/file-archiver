@@ -50,4 +50,68 @@ class InspectionFileTest {
         ))
             .isInstanceOf(InvalidInspectionTimeException.class);
     }
+
+    @Test
+    void 비교_대상이_없으면_원파일을_그대로_반환한다() {
+        // given
+        InspectionFile file = createFile(LocalDateTime.now().minusMinutes(10), "a.txt");
+
+        // when
+        InspectionFile latest = file.getLatestWith(null);
+
+        // then
+        assertThat(latest).isSameAs(file);
+    }
+
+    @Test
+    void 타겟파일이_최근_검사파일이면_타겟파일을_반환한다() {
+        // given
+        LocalDateTime base = LocalDateTime.now().minusMinutes(10);
+        InspectionFile file = createFile(base, "a.txt");
+        InspectionFile target = createFile(base.plusMinutes(1), "b.txt");
+
+        // when
+        InspectionFile latest = file.getLatestWith(target);
+
+        // then
+        assertThat(latest).isSameAs(target);
+    }
+
+    @Test
+    void 원파일이_최근_검사파일이면_원파일을_반환한다() {
+        // given
+        LocalDateTime base = LocalDateTime.now().minusMinutes(10);
+        InspectionFile file = createFile(base.plusMinutes(1), "a.txt");
+        InspectionFile target = createFile(base, "b.txt");
+
+        // when
+        InspectionFile latest = file.getLatestWith(target);
+
+        // then
+        assertThat(latest).isSameAs(file);
+    }
+
+    @Test
+    void 검사_시각이_같으면_원파일을_반환한다() {
+        // given
+        LocalDateTime inspectedAt = LocalDateTime.now().minusMinutes(10);
+        InspectionFile file = createFile(inspectedAt, "a.txt");
+        InspectionFile target = createFile(inspectedAt, "b.txt");
+
+        // when
+        InspectionFile latest = file.getLatestWith(target);
+
+        // then
+        assertThat(latest).isSameAs(file);
+    }
+
+    private InspectionFile createFile(LocalDateTime inspectedAt, String filePath) {
+        return InspectionFile.create(
+            Product.create("SN-0001"),
+            inspectedAt,
+            "SENSOR-01",
+            "EQ-07",
+            filePath
+        );
+    }
 }
