@@ -1,6 +1,6 @@
 package com.filearchiver.packing.domain;
 
-import com.filearchiver.packing.domain.exception.DuplicatePackAttemptException;
+import com.filearchiver.packing.domain.exception.DuplicatedPackException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -48,7 +48,7 @@ public class Product {
 
     public void pack(Packaging packaging){
         if (isPacked()) {
-            throw new DuplicatePackAttemptException(this.serial);
+            throw new DuplicatedPackException(this.serial);
         }
 
         this.packaging = packaging;

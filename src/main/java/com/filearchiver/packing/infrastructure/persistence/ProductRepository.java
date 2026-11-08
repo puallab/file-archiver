@@ -25,5 +25,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     """)
     int updatePackagingBySerials(@Param("packing")Packaging packaging, @Param("serials") List<String> serials);
 
-    List<Product> findByPackagingIsNotAndSerialIn(@Param("packing")Packaging packaging, @Param("serials") List<String> serials);
+    List<Product> findBySerialIn(List<String> serials);
+
+    List<Product> findByPackagingIsNotAndSerialIn(Packaging packaging, List<String> serials);
 }
