@@ -1,6 +1,5 @@
 package com.filearchiver.packing.presentation.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -13,10 +12,7 @@ public final class PackagingDto {
 
     public record PackRequest(
         @NotEmpty
-        List<String> serials,
-
-        @NotBlank
-        String MaterialCode
+        List<String> serials
     ) {
     }
 

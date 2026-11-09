@@ -39,8 +39,6 @@ public class PackagingService {
         Packaging box = Packaging.createBox(numberGenerator.nextSequenceNumber(NumberRuleType.PACKAGING_NO));
         packagingRepository.save(box);
 
-        //시리얼 중 검사 파일 없으면 거절, 하나라도 포장되어 있으면 거절
-        //product에 packaging id가 이미 존재함.
         int updatedRowCount = productRepository.updatePackagingBySerials(box, request.serials());
 
         //1.존재하지 않는 serial이 들어올 수 있음.
