@@ -1,8 +1,6 @@
-package com.filearchiver.inspection.domain;
+package com.filearchiver.packing.domain;
 
-import com.filearchiver.global.exception.BusinessException;
-import com.filearchiver.global.exception.ErrorCode;
-import com.filearchiver.packing.domain.Product;
+import com.filearchiver.packing.domain.exception.InvalidInspectionTimeException;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -50,8 +48,6 @@ class InspectionFileTest {
             "EQ-07",
             "inspection-files/SN-0001.txt"
         ))
-            .isInstanceOf(BusinessException.class)
-            .extracting("errorCode")
-            .isEqualTo(ErrorCode.INVALID_INSPECTION_TIME);
+            .isInstanceOf(InvalidInspectionTimeException.class);
     }
 }
