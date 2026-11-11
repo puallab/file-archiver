@@ -1,6 +1,7 @@
 package com.filearchiver.common.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
@@ -36,6 +38,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             problemDetail.setProperty("args", ex.getParams());
         }
 
+        log.warn("{} : {} errorCode = {}, params = {}",
+                ex.getClass().getSimpleName(), ex.getMessage(),
+                ex.getErrorCode().getCode(), ex.getParams());
+
         return  problemDetail;
     }
 
@@ -43,12 +49,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ProblemDetail handleServerException(Exception ex, HttpServletRequest request){
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 ErrorCode.INTERNAL_ERROR.getStatus(),
-                "관리자에게 문의하세요,"
+                "관리자에게 문의하세요."
         );
 
         problemDetail.setInstance(URI.create(request.getRequestURI()));
         problemDetail.setProperty("errorCode", ErrorCode.INTERNAL_ERROR.getCode());
         problemDetail.setProperty("timestamp", LocalDateTime.now());
+
+        log.error("Internal Server Error", ex);
 
         return problemDetail;
     }
@@ -73,6 +81,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 ));
 
         problemDetail.setProperty("args", invalidValues);
+
+        log.warn("{} : errorCode = {}, args = {}",
+                ex.getClass().getSimpleName(), ErrorCode.INVALID_REQUEST.getCode(), invalidValues);
 
         return super.handleMethodArgumentNotValid(ex, headers, status, request);
     }
