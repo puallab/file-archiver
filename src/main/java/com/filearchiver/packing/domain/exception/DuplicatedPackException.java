@@ -1,16 +1,22 @@
 package com.filearchiver.packing.domain.exception;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import com.filearchiver.common.exception.BusinessException;
+import com.filearchiver.common.exception.ErrorCode;
 
-@ResponseStatus(HttpStatus.CONFLICT)
-@Slf4j
-public class DuplicatedPackException extends RuntimeException{
+import java.util.Map;
+
+public class DuplicatedPackException extends BusinessException {
     private static final String message = "이미 포장된 제품입니다.";
+    private static final ErrorCode errorCode = ErrorCode.DUPLICATED_PRODUCT_PACK;
+    private final String serial;
 
     public DuplicatedPackException(String serial) {
-        super(message);
-        log.info("message = {}, serial  = {}", message, serial);
+        super(errorCode, message);
+        this.serial = serial;
+    }
+
+    @Override
+    public Map<String, Object> getParams() {
+        return Map.of("serial", this.serial);
     }
 }

@@ -1,16 +1,28 @@
 package com.filearchiver.packing.domain.exception;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import com.filearchiver.common.exception.BusinessException;
+import com.filearchiver.common.exception.ErrorCode;
 
-@ResponseStatus(HttpStatus.CONFLICT)
-@Slf4j
-public class PackagingRejectedException extends RuntimeException {
+import java.util.List;
+import java.util.Map;
+
+public class PackagingRejectedException extends BusinessException {
     private static final String message = "올바르지 않은 Serial 포장 요청입니다.";
+    private static final ErrorCode errorCode = ErrorCode.REJECT_PACKAGING_REQUEST;
+    private final List<String> nonexistentSerials;
+    private final List<String> alreadyPackedSerials;
 
-    public PackagingRejectedException(String nonexistentSerialList, String alreadyPackedSerial) {
-        super(message);
-        log.info("message = {}, nonexistentList  = {}, alreadyPackedList = {}", message, nonexistentSerialList, alreadyPackedSerial);
+    public PackagingRejectedException(List<String> nonexistentSerials, List<String> alreadyPackedSerials) {
+        super(errorCode, message);
+        this.nonexistentSerials = nonexistentSerials;
+        this.alreadyPackedSerials = alreadyPackedSerials;
+    }
+
+    @Override
+    public Map<String, Object> getParams() {
+        return Map.of(
+                "nonexistentSerials", this.nonexistentSerials,
+                "alreadyPackedSerials", this.alreadyPackedSerials
+        );
     }
 }

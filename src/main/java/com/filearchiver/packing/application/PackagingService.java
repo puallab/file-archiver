@@ -3,7 +3,7 @@ package com.filearchiver.packing.application;
 import com.filearchiver.packing.application.numbering.NumberGenerateService;
 import com.filearchiver.packing.domain.Packaging;
 import com.filearchiver.packing.domain.Product;
-import com.filearchiver.packing.domain.exception.DuplicateSerialInputException;
+import com.filearchiver.packing.domain.exception.DuplicatedSerialInputException;
 import com.filearchiver.packing.domain.exception.PackagingRejectedException;
 import com.filearchiver.packing.domain.numbering.NumberRuleType;
 import com.filearchiver.packing.infrastructure.persistence.PackagingRepository;
@@ -31,9 +31,10 @@ public class PackagingService {
     public PackagingDto.PackResponse pack(PackagingDto.PackRequest request) {
 
         //0.중복 입력 검사
-        Set<String> set = new HashSet<>(request.serials());
-        if (set.size() != request.serials().size()) {
-            throw new DuplicateSerialInputException();
+        List<String> duplicateSerial = getDuplicateSerial(request);
+
+        if (!duplicateSerial.isEmpty()) {
+            throw new DuplicatedSerialInputException(duplicateSerial);
         }
 
         Packaging box = Packaging.createBox(numberGenerator.nextSequenceNumber(NumberRuleType.PACKAGING_NO));
@@ -43,21 +44,28 @@ public class PackagingService {
 
         //1.존재하지 않는 serial이 들어올 수 있음.
         //2.이미 포장된 serial이 포함될 수 있음
-        if (updatedRowCount != set.size()) {
-            throw new PackagingRejectedException(getNonexistentSerialList(request), getAlreadyPackedSerial(request, box));
+        if (updatedRowCount != request.serials().size()) {
+            throw new PackagingRejectedException(getNonexistentSerials(request), getAlreadyPackedSerials(request, box));
         }
 
         return new PackagingDto.PackResponse(box.getPackagingNo(), LocalDateTime.now());
     }
 
-    private String getAlreadyPackedSerial(PackagingDto.PackRequest request, Packaging box) {
+    private static List<String> getDuplicateSerial(PackagingDto.PackRequest request) {
+        Set<String> seen = new HashSet<>();
+        return request.serials().stream()
+                .filter(item -> !seen.add(item))
+                .toList();
+    }
+
+    private List<String> getAlreadyPackedSerials(PackagingDto.PackRequest request, Packaging box) {
         List<Product> alreadyPackedList = productRepository.findByPackagingIsNotAndSerialIn(box, request.serials());
         return alreadyPackedList.stream()
                 .map(Product::getSerial)
-                .collect(Collectors.joining(","));
+                .toList();
     }
 
-    private @NonNull String getNonexistentSerialList(PackagingDto.PackRequest request) {
+    private @NonNull List<String> getNonexistentSerials(PackagingDto.PackRequest request) {
         Set<String> existSerialSet = productRepository.findBySerialIn(request.serials())
                 .stream()
                 .map(Product::getSerial)
@@ -66,6 +74,6 @@ public class PackagingService {
         return request.serials()
                 .stream()
                 .filter(requestSerial -> !existSerialSet.contains(requestSerial))
-                .collect(Collectors.joining(","));
+                .toList();
     }
 }
