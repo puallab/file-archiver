@@ -1,18 +1,28 @@
 package com.filearchiver.packing.domain.exception;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import com.filearchiver.common.exception.BusinessException;
+import com.filearchiver.common.exception.ErrorCode;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
-@ResponseStatus(HttpStatus.BAD_REQUEST)
-@Slf4j
-public class InvalidInspectionTimeException extends RuntimeException {
+public class InvalidInspectionTimeException extends BusinessException {
     private static final String message = "유효하지 않은 검사시각 입니다.";
+    private static final ErrorCode errorCode = ErrorCode.INVALID_INSPECTION_TIME;
+    private final LocalDateTime inspectionTime;
+    private final LocalDateTime checkedTime;
 
-    public InvalidInspectionTimeException(LocalDateTime inspectionTime, LocalDateTime checkedTime){
-        super(message);
-        log.info("message = {}, inspectionTime  = {}, occurredTime = {}", message, inspectionTime, checkedTime);
+    public InvalidInspectionTimeException(LocalDateTime inspectionTime, LocalDateTime checkedTime) {
+        super(errorCode, message);
+        this.inspectionTime = inspectionTime;
+        this.checkedTime = checkedTime;
+    }
+
+    @Override
+    public Map<String, Object> getParams() {
+        return Map.of(
+                "inspectionTime", this.inspectionTime,
+                "checkedTime", this.checkedTime
+        );
     }
 }

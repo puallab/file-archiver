@@ -3,7 +3,7 @@ package com.filearchiver.packing.application;
 import com.filearchiver.packing.application.numbering.NumberGenerateService;
 import com.filearchiver.packing.domain.Packaging;
 import com.filearchiver.packing.domain.Product;
-import com.filearchiver.packing.domain.exception.DuplicateSerialInputException;
+import com.filearchiver.packing.domain.exception.DuplicatedSerialInputException;
 import com.filearchiver.packing.domain.exception.PackagingRejectedException;
 import com.filearchiver.packing.domain.numbering.NumberRuleType;
 import com.filearchiver.packing.infrastructure.persistence.PackagingRepository;
@@ -47,7 +47,7 @@ public class PackagingServiceTest {
                 List.of("SN-0001", "SN-0002", "SN-0001")
         );
         //when then
-        assertThatThrownBy(() -> packagingService.pack(request)).isInstanceOf(DuplicateSerialInputException.class);
+        assertThatThrownBy(() -> packagingService.pack(request)).isInstanceOf(DuplicatedSerialInputException.class);
 
         verify(numberGenerateService, never()).nextSequenceNumber(NumberRuleType.PACKAGING_NO);
         verify(packagingRepository, never()).save(any(Packaging.class));
