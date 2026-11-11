@@ -19,19 +19,12 @@ public class InspectionFileService {
 
         Product product = productService.findOrCreateWithLock(request.serial());
 
-        return inspectionFileRepository.findByProductAndInspectedAt(product, request.inspectedAt())
-                .map(entity -> {
-
-                    //이미 포장이 완료된 이후에 동일 검사시각으로 검사파일 등록 요청이 온 경우엔 무시한다.
-                    if (product.isPacked()) {
-                        return entity.getId();
-                    }
-
-                    entity.updateInfo(request.sensorId(), request.uploaderEquipment(), request.filePath());
-
-                    return entity.getId();
+        InspectionFile newInspectionFile = inspectionFileRepository.findByFilePath(request.filePath())
+                .map(findInspectionFile -> {
+                    findInspectionFile.updateInfo(request.sensorId(), request.uploaderEquipment());
+                    return findInspectionFile;
                 }).orElseGet(() -> {
-                    InspectionFile inspectionFile = InspectionFile.create(
+                    InspectionFile newFile = InspectionFile.create(
                             product,
                             request.inspectedAt(),
                             request.sensorId(),
@@ -39,7 +32,22 @@ public class InspectionFileService {
                             request.filePath()
                     );
 
-                    return inspectionFileRepository.save(inspectionFile).getId();
+                    return inspectionFileRepository.save(newFile);
                 });
+
+
+        InspectionFile latestInspectionFile = getLatestInspectionFile(product, newInspectionFile);
+
+        product.applyInspectionFile(latestInspectionFile, newInspectionFile);
+
+        return newInspectionFile.getId();
+    }
+
+    //product에 연결된 file이 존재하면 최신 검사파일로 반환한다. 검사파일이 존재하지 않으면 신규로 들어온 파일로 대체한다.
+    private InspectionFile getLatestInspectionFile(Product product, InspectionFile newInspectionFile) {
+        if(product.getFileId() != null){
+            return inspectionFileRepository.findById(product.getFileId()).orElseGet(()-> newInspectionFile);
+        }
+        return newInspectionFile;
     }
 }

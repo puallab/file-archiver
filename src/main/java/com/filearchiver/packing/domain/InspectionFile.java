@@ -9,8 +9,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,14 +19,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @Entity
-@Table(name = "inspection_file",
-    uniqueConstraints = @UniqueConstraint(name = "uk_inspection_file_product_id_inspected_at",
-        columnNames = {"product_id", "inspected_at"}))
 public class InspectionFile {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, unique = true)
+    private String filePath;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "product_id", nullable = false)
@@ -40,9 +38,6 @@ public class InspectionFile {
     private String sensorId;
 
     private String uploaderEquipment;
-
-    @Column(nullable = false, length = 500)
-    private String filePath;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -85,9 +80,14 @@ public class InspectionFile {
             .build();
     }
 
-    public void updateInfo(String sensorId, String uploaderEquipment, String filePath) {
+    public void updateInfo(String sensorId, String uploaderEquipment) {
         this.sensorId = sensorId;
         this.uploaderEquipment = uploaderEquipment;
-        this.filePath = filePath;
+    }
+
+    public InspectionFile getLatestWith(InspectionFile targetFile){
+        if(null == targetFile) return this;
+
+        return targetFile.inspectedAt.isAfter(this.inspectedAt)  ? targetFile : this;
     }
 }

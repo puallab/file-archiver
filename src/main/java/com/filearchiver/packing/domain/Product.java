@@ -1,5 +1,6 @@
 package com.filearchiver.packing.domain;
 
+import com.filearchiver.packing.domain.exception.DuplicatedPackException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -45,4 +46,20 @@ public class Product {
         return this.packaging != null;
     }
 
+    public void pack(Packaging packaging){
+        if (isPacked()) {
+            throw new DuplicatedPackException(this.serial);
+        }
+
+        this.packaging = packaging;
+    }
+
+    public void applyInspectionFile(InspectionFile latestInspectionFile, InspectionFile newInspectionFile) {
+        if(isPacked()){
+            return;
+        }
+
+        InspectionFile latestWith = newInspectionFile.getLatestWith(latestInspectionFile);
+        this.fileId = latestWith.getId();
+    }
 }
